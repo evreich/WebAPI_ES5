@@ -7,6 +7,8 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using TestService.DBHelpers;
+using TestService.Infrasructure;
 
 namespace WebAPI_ES5
 {
@@ -14,7 +16,7 @@ namespace WebAPI_ES5
     {
         public static void Main(string[] args)
         {
-            BuildWebHost(args).Run();
+            BuildWebHost(args).MigrateDatabase<TestServiceContext>().InitDb<TestServiceContext>().Run();
         }
 
         public static IWebHost BuildWebHost(string[] args) =>
