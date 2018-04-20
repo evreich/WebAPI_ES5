@@ -8,24 +8,19 @@
 
     function addQuestionToList(question) {
         self.questionList.push(question);
-    };
+    }
 
-    function ajaxToService(serviceMethodName, callbackFunc ) {
+    function ajaxToService(serviceMethodName, callback) {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', serviceUrl + serviceMethodName, true);
         xhr.withCredentials = true;
         xhr.send();
-
-        xhr.onreadystatechange = function () {
-            if (this.readyState !== XMLHttpRequest.DONE) {               
-                return;
-            }
-            if (this.status !== 200) {
-                alert('Ошибка: ' + (this.status ? this.statusText : ', запрос не удался'));
-            }
-            callbackFunc(this.responseText);
-        }
-
+        xhr.onload = function (event) {
+            callback(event.target.responseText);
+        };
+        xhr.onerror = function (event) {
+            alert('Ошибка: ' + (event.target.status ? event.target.statusText : ', запрос не удался'));
+        };
     }
 
     function createNextQuestionObject() {
@@ -33,8 +28,20 @@
         if (questionIndex <= questionCount) {            
             //чистим рабочую область;
             clearContainer();
+            
             //загружаем очередной вопрос
-            loadQuestion(pageContent);           
+            loadQuestion(function (questionFromServer) {
+                var parsedQuestion = JSON.parse(questionFromServer);
+                var newQuestion = questionFactory(parsedQuestion);
+                //инициируем генерацию страницы вопроса и передаем данные для question
+                questionInfo = {
+                    qIndex: questionIndex,
+                    qCount: questionCount,
+                    addToListMethod: addQuestionToList,
+                    createNewQuestion: createNextQuestionObject
+                };
+                newQuestion.init(pageContent, questionInfo);
+            });  
         }
         else {
             showResult();
@@ -59,13 +66,16 @@
         startTestButton.innerText = "Начать";
         startTestButton.addEventListener(
             "click",
-            ajaxToService.bind(this,"TestInit", function (countQuestions) {
-                questionCount = countQuestions;
-                questionIndex = 0;
-                pageContent.classList.remove("main-content");
-                pageContent.classList.add("question-content");
-                createNextQuestionObject();
-            }),
+            function startTest() {
+                ajaxToService("TestInit", function (countQuestions) {
+                    questionCount = countQuestions;
+                    questionIndex = 0;
+                    pageContent.classList.remove("main-content");
+                    pageContent.classList.add("question-content");
+                    createNextQuestionObject();
+                });
+                startTestButton.removeEventListener("click", startTest, false);
+            },
             false
         );
 
@@ -76,20 +86,19 @@
 
         pageContent.appendChild(contentDiv);
         pageContent.classList.add("main-content");
-    }
+    };
 
-    function loadQuestion(pageContent) {
-        ajaxToService("GetNext/" + questionIndex, questionFactory);
+    function loadQuestion(callBack) {
+        ajaxToService("GetNext/" + questionIndex, callBack);
     }
 
     function questionFactory(inputQuestion) {
         var separator = "#;";
-        var quest = JSON.parse(inputQuestion);
 
         function decodeArray(encodedArray) {
             var decodeRes = [];
             var i = 1;
-            encodedArray.split(separator).forEach(function (elem) {
+            encodedArray.split(separator).forEach(function(elem) {
                 decodeRes.push({ key: i++, value: b64DecodeUnicode(elem) });
             });
             return decodeRes;
@@ -97,18 +106,18 @@
 
         function b64DecodeUnicode(str) {
             // Going backwards: from bytestream, to percent-encoding, to original string.
-            return decodeURIComponent(atob(str).split('').map(function (c) {
+            return decodeURIComponent(atob(str).split('').map(function(c) {
                 return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
             }).join(''));
         }
 
         //декодируем вопрос путем раскодирования из base 64 в ANSI, а затем кодирования/раскодирования в UTF-8
-        var decodeTest = b64DecodeUnicode(quest.text);
-        var decodeOptions = decodeArray(quest.options);
-        var decodeAnswers = decodeArray(quest.answers);
+        var decodeTest = b64DecodeUnicode(inputQuestion.text);
+        var decodeOptions = decodeArray(inputQuestion.options);
+        var decodeAnswers = decodeArray(inputQuestion.answers);
 
         //генерация объекта вопроса и связывание с родительским классом
-        var parent_question = new Question(decodeAnswers, decodeOptions, decodeTest, quest.timeOut);
+        var parent_question = new Question(decodeAnswers, decodeOptions, decodeTest, inputQuestion.timeOut);
 
         var child_question;
 
@@ -116,21 +125,13 @@
 
         child_question.__proto__ = parent_question;
 
-        //инициируем генерацию страницы вопроса и передаем данные для question
-        questionInfo = {
-            qIndex : questionIndex,
-            qCount: questionCount,
-            addToListMethod: addQuestionToList,
-            createNewQuestion: createNextQuestionObject
-        };
-
-        child_question.init(pageContent, questionInfo);
+        return child_question;
     }
 
     function showResult() {
         //вычисление суммы баллов
-        commonScore = self.questionList.reduce(function (a, b) {
-            return a + b.getScore();
+        commonScore = self.questionList.reduce(function (sum, nextElem) {
+            return sum + nextElem.getScore();
         }, 0);
         //очистка контейнера
         clearContainer();
@@ -153,12 +154,14 @@
         restartTestButton.innerText = "Пройти тест еще раз";
         restartTestButton.addEventListener(
             "click",
-            ajaxToService.bind(this,"TestInit", function (countQuestions) {
-                questionCount = countQuestions;
-                questionIndex = 0;
-                createNextQuestionObject();
-                self.questionList = [];
-            }),
+            function () {
+                ajaxToService("TestInit", function (countQuestions) {
+                    questionCount = countQuestions;
+                    questionIndex = 0;
+                    createNextQuestionObject();
+                    self.questionList = [];
+                });
+            }, 
             false
         );
 

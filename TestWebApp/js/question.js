@@ -2,33 +2,35 @@
     var answers = _answers;
     this.options = _options;
     this.text = _text;
-    this.timeOut = _timeOut;
+    var timeOut = _timeOut;
     var score = 0; 
 
-    this.getScore = function () {
+    this.getScore = function() {
         return score;
     };
 
-    this.handleNext = function (createNextQuestion, addQuestionToHistory, result) {
-        result.forEach(function (elem) {
+    this.handleNext = function(createNextQuestion, addQuestionToHistory, result) {
+        result.forEach(function(elem) {
             if (answers.some(function (answer) {
                 return answer.value === elem;
-            }))
+            })) {
                 score++;
+            }
+                
         });
 
         addQuestionToHistory(this);
         createNextQuestion();
     }.bind(this);
 
-    var getCorrectTimeFromSeconds = function(time) {
+    var getCorrectTimeFromSeconds = function (time) {
         var minutes = Math.floor(time / 60);
         var seconds = time - minutes * 60;
 
         return minutes + ":" + seconds;
-    }
+    };
 
-    this.init = function (contentElem, questionInfo, nextQuestionButton) {
+    this.init = function(contentElem, questionInfo, nextQuestionButton) {
         //генерируем новые элементы страницы
         var questionHeaderContainer = document.createElement("div");
         questionHeaderContainer.className = "question-container";
@@ -39,33 +41,41 @@
         questionHeaderContainer.appendChild(questionTitle);
 
         //добавляем таймер на страницу, если имеем соотв значение
-        if (this.timeOut) {
+        if (timeOut) {
             var questionTimer = document.createElement("h4");
             questionTimer.id = "timer";
-            questionTimer.className = "d-block mr-5";
-            questionTimer.style = "color: red;";
-            questionTimer.innerText = getCorrectTimeFromSeconds(this.timeOut);
+            questionTimer.className = "ml-2";
+            questionTimer.style = "color: red; display:inline-block";
+            questionTimer.innerText = getCorrectTimeFromSeconds(timeOut);
 
-            var currTimeout = this.timeOut;
+            var currTimeout = timeOut;
             var timerId = setTimeout(function tick() {
                 if (currTimeout === 0) {
-                    var event = new Event("click");
-                    nextQuestionButton.dispatchEvent(event);
+                    nextQuestionButton.disabled = false;
+                    nextQuestionButton.click();
                 }
                 else {
-                    questionTimer.innerText = getCorrectTimeFromSeconds(--currTimeout)
+                    questionTimer.innerText = getCorrectTimeFromSeconds(--currTimeout);
                     timerId = setTimeout(tick, 1000);
                 }
             }, 1000);
 
             nextQuestionButton.addEventListener(
                 "click",
-                function () {
+                function() {
                     clearTimeout(timerId);
                 },
                 false);
+            var timerIcon = document.createElement("i");
+            timerIcon.className = "far fa-clock";
+            timerIcon.style = "font-size: large";
 
-            questionHeaderContainer.appendChild(questionTimer);
+            var container = document.createElement("div");
+            container.className = "d-block mr-5";
+            container.appendChild(timerIcon);
+            container.appendChild(questionTimer);
+
+            questionHeaderContainer.appendChild(container);
         }
 
         var questionSequence = document.createElement("h4");

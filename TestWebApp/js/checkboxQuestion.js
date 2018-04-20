@@ -1,18 +1,18 @@
 ﻿function CheckboxQuestion(_answers, _options, _text) {
-    function handleNext(createNewQuestion, addToListMethod) {
+    var handleNext = function (createNewQuestion, addToListMethod) {
         var textChoosenOptions = [];
         //сбор результатов с формы
         document.getElementsByName("questionCheckbox").forEach(function (elem) {
             if (elem.checked) {
-                textChoosenOptions.push(document.getElementById("label" + elem.id).innerText);
+                textChoosenOptions.push(elem.value);
             }
         });
 
         //вызов функции родителя
-        this.__proto__.handleNext(createNewQuestion, addToListMethod, textChoosenOptions);
-    }
+        this.handleNext(createNewQuestion, addToListMethod, textChoosenOptions);
+    }.bind(this);
 
-    this.init = function (contentElem, questionInfo) {
+    this.init = function(contentElem, questionInfo) {
         var nextQuestionButton = document.createElement("button");
         nextQuestionButton.className = "d-block btn btn-success btn-block";
         nextQuestionButton.id = "nextQuestion";
@@ -20,7 +20,9 @@
         nextQuestionButton.disabled = true;
         nextQuestionButton.addEventListener(
             "click",
-            handleNext.bind(this, questionInfo.createNewQuestion, questionInfo.addToListMethod),
+            function (){
+                handleNext(questionInfo.createNewQuestion, questionInfo.addToListMethod);
+            },
             false
         );
 
@@ -37,13 +39,14 @@
 
             var questionOption = document.createElement("input");
             questionOption.id = key;
+            questionOption.value = text;
             questionOption.name = checkboxName;
             questionOption.type = "checkbox";
             questionOption.className = "custom-control-input";
 
             questionOption.addEventListener(
                 "change",
-                function () {
+                function() {
                     if (this.checked) {
                         countCheckedOptions++;
                         nextQuestionButton.disabled = false;
@@ -70,7 +73,7 @@
             return questionOptionContainer;
         }
 
-        this.options.forEach(function (elem) {
+        this.options.forEach(function(elem) {
             contentElem.appendChild(createCheckbox(elem.value, elem.key));
             contentElem.appendChild(document.createElement("br"));
         });
