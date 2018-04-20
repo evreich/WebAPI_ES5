@@ -9,14 +9,14 @@ namespace TestService.Infrasructure
 {
     public static class SessionExtension
     {
-        public static void SetJson(this ISession session, string key, object value)
+        public static void SetJson(this ISession session, int key, object value)
         {
-            session.SetString(key, JsonConvert.SerializeObject(value));
+            session.SetString(key.ToString(), JsonConvert.SerializeObject(value));
         }
 
-        public static T GetJson<T>(this ISession session, string key)
+        public static T GetJson<T>(this ISession session, int key)
         {
-            var sessionData = session.GetString(key);
+            var sessionData = session.GetString(key.ToString());
             return sessionData == null ? default(T) : JsonConvert.DeserializeObject<T>(sessionData);
         }
     }

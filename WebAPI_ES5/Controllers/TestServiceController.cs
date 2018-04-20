@@ -58,13 +58,13 @@ namespace WebAPI_ES5.Controllers
             //Заполнение вопросов в сессию
             questions.ForEach((QuestionEntity question) =>
             {
-                HttpContext.Session.SetJson($"Question{counter++}", question);
-            });
+                HttpContext.Session.SetJson(counter++, question);
+            }); 
             return countQuestionsForTest;
         }
 
         [HttpGet("{index}")]
-        public QuestionEntity GetNext(string index)
+        public QuestionEntity GetNext(int index)
         {
             if (HttpContext.Session.Keys.Count() == 0)
                 throw new Exception("Ошибка! Сессия не инициализированна.");

@@ -9,6 +9,6 @@ namespace TestService.Controllers
     public interface ITestService
     {
         int TestInit();
-        QuestionEntity GetNext(string index);
+        QuestionEntity GetNext(int index);
     }
 }

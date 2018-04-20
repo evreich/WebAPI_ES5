@@ -27,7 +27,7 @@ namespace TestService.Infrasructure
                 catch (Exception ex)
                 {
                     var logger = services.GetRequiredService<ILogger<Program>>();
-                    logger.LogError(ex, "An error occurred while migrating the database.");
+                    logger.LogError(ex, "Ошибка в процессе применения миграции к БД.");
                 }
             }
 
@@ -54,6 +54,11 @@ namespace TestService.Infrasructure
                             db.Database.ExecuteSqlCommand("SET IDENTITY_INSERT dbo.QuestionEntities OFF");
                             db.SaveChanges();
                         }
+                        catch (Exception ex)
+                        {
+                            var logger = services.GetRequiredService<ILogger<Program>>();
+                            logger.LogError(ex, "Неудачная попытка применения хранимой процедуры к БД.");
+                        }
                         finally
                         {
                             db.Database.CloseConnection();
@@ -63,7 +68,7 @@ namespace TestService.Infrasructure
                 catch (Exception ex)
                 {
                     var logger = services.GetRequiredService<ILogger<Program>>();
-                    logger.LogError(ex, "An error occurred while migrating the database.");
+                    logger.LogError(ex, "Неудачная попытка подключения к сервису.");
                 }
             }
 

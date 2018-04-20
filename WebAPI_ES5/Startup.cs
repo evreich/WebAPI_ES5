@@ -29,10 +29,27 @@ namespace WebAPI_ES5
             services.AddDbContext<TestServiceContext>(options => options.UseSqlServer(defaultConnection));
             services.AddScoped<IQuestionsRepository, QuestionsRepository>();
             services.AddLogging();
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAllOrigins",
+                    builder =>
+                    {
+                        builder.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin().AllowCredentials();
+                    }
+                );
+            });
+            services.ConfigureApplicationCookie(options =>
+            {
+                options.ExpireTimeSpan = TimeSpan.FromMinutes(20);
+            });
 
             services.AddMvc();
-            services.AddMemoryCache();
-            services.AddSession();
+            services.AddDistributedMemoryCache();
+            services.AddSession(options =>
+            {
+                options.IdleTimeout = TimeSpan.FromMinutes(1);
+                options.Cookie.HttpOnly = true;
+            });
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
@@ -42,6 +59,7 @@ namespace WebAPI_ES5
                 app.UseDeveloperExceptionPage();
             }
             app.UseSession();
+            app.UseCors("AllowAllOrigins");
             app.UseMvc();
         }
     }
